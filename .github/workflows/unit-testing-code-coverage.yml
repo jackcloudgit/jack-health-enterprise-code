@@ -1,0 +1,46 @@
+name: Unit Testing and Code Coverage
+
+on:
+  workflow_call:
+    inputs:
+      platform:
+        description: VSTest platform.
+        required: false
+        type: string
+        default: x64
+      build_artifact_name:
+        description: Compiled-output artifact uploaded by visual-studio-build.yml.
+        required: false
+        type: string
+        default: dotnet-build-output
+
+permissions:
+  contents: read
+
+jobs:
+  unit-testing-code-coverage:
+    runs-on: windows-2019
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download compiled output
+        uses: actions/download-artifact@v4
+        with:
+          # Parameter passing: caller names the artifact created by the preceding build workflow.
+          name: ${{ inputs.build_artifact_name }}
+          path: ${{ github.workspace }}
+
+      - name: Run VSTest with code coverage
+        uses: microsoft/vstest-action@v1.0.0
+        with:
+          # Parameter passing: action owns the requested test assembly selection convention.
+          testAssembly: |
+            **\*.test.dll
+            **\*.unitest.dll
+            !**\*TestAdapter.dll
+            !**\obj\**
+          searchFolder: ${{ github.workspace }}
+          runInParallel: true
+          codeCoverageEnabled: true
+          platform: ${{ inputs.platform }}

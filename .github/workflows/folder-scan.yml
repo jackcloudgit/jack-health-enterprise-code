@@ -1,0 +1,33 @@
+name: Folder Scan
+
+on:
+  workflow_call:
+    inputs:
+      script_path:
+        description: Path in the calling repository to scan_for_folders.ps1.
+        required: false
+        type: string
+        default: scan_for_folders.ps1
+      configuration:
+        description: Build configuration passed to the scan script.
+        required: false
+        type: string
+        default: Release
+
+permissions:
+  contents: read
+
+jobs:
+  folder-scan:
+    runs-on: windows-2019
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Scan folders
+        shell: pwsh
+        run: |
+          # Parameter passing: workspace and configuration are passed explicitly to the script.
+          & "${{ inputs.script_path }}" `
+            -RootPath "${{ github.workspace }}" `
+            -Configuration "${{ inputs.configuration }}"

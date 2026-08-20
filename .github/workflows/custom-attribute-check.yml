@@ -1,0 +1,44 @@
+name: Custom Attribute Check
+
+on:
+  workflow_call:
+    inputs:
+      script_path:
+        description: Path in the calling repository to the Python checker script.
+        required: false
+        type: string
+        default: custom_attribute_check.py
+      solution_path:
+        description: Solution path passed to the checker.
+        required: true
+        type: string
+      configuration:
+        description: Build configuration passed to the checker.
+        required: false
+        type: string
+        default: Release
+
+permissions:
+  contents: read
+
+jobs:
+  custom-attribute-check:
+    runs-on: windows-2019
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run custom attribute check
+        shell: python
+        run: |
+          import subprocess
+          import sys
+
+          # Parameter passing: workflow inputs become explicit arguments to the checker.
+          subprocess.run([
+              sys.executable,
+              r"${{ inputs.script_path }}",
+              "--workspace", r"${{ github.workspace }}",
+              "--solution", r"${{ inputs.solution_path }}",
+              "--configuration", r"${{ inputs.configuration }}",
+          ], check=True)

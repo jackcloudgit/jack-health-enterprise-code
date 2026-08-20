@@ -1,0 +1,30 @@
+name: Create Build Metadata
+
+on:
+  workflow_call:
+    inputs:
+      script_path:
+        description: Path in the calling repository to TCBuildMetadataInfo.ps1.
+        required: false
+        type: string
+        default: TCBuildMetadataInfo.ps1
+
+permissions:
+  contents: read
+
+jobs:
+  create-build-metadata:
+    runs-on: windows-2019
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create build metadata
+        shell: pwsh
+        run: |
+          # Parameter passing: GitHub run values replace TeamCity build parameters.
+          & "${{ inputs.script_path }}" `
+            -BuildId "${{ github.run_id }}" `
+            -BuildNumber "${{ github.run_number }}" `
+            -BuildAttempt "${{ github.run_attempt }}" `
+            -SourceVersion "${{ github.sha }}"

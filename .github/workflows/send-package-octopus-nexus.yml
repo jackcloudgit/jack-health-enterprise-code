@@ -1,0 +1,77 @@
+name: Send Package to Octopus or Nexus
+
+on:
+  workflow_call:
+    inputs:
+      script_path:
+        description: Path in the calling repository to the packaging/upload PowerShell script.
+        required: false
+        type: string
+        default: Send-PackageToOctopusNexus.ps1
+      configuration:
+        description: Build configuration.
+        required: false
+        type: string
+        default: Release
+      build_number:
+        description: Build number used for package versioning.
+        required: true
+        type: string
+      build_artifact_name:
+        description: Compiled-output artifact uploaded by visual-studio-build.yml.
+        required: false
+        type: string
+        default: dotnet-build-output
+      octopus_server_url:
+        description: Octopus server URL. Leave empty when publishing only to Nexus.
+        required: false
+        type: string
+        default: ''
+      nexus_server_url:
+        description: Nexus server URL. Leave empty when publishing only to Octopus.
+        required: false
+        type: string
+        default: ''
+    secrets:
+      OCTOPUS_API_KEY:
+        required: false
+      NEXUS_USERNAME:
+        required: false
+      NEXUS_PASSWORD:
+        required: false
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  send-package-octopus-nexus:
+    runs-on: windows-2019
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download compiled output
+        uses: actions/download-artifact@v4
+        with:
+          # Parameter passing: caller selects the compiled package/output artifact to publish.
+          name: ${{ inputs.build_artifact_name }}
+          path: ${{ github.workspace }}
+
+      - name: Package and upload artifacts
+        shell: pwsh
+        env:
+          OCTOPUS_API_KEY: ${{ secrets.OCTOPUS_API_KEY }}
+          NEXUS_USERNAME: ${{ secrets.NEXUS_USERNAME }}
+          NEXUS_PASSWORD: ${{ secrets.NEXUS_PASSWORD }}
+        run: |
+          # Parameter passing: endpoints determine Octopus, Nexus, or both; credentials remain secrets.
+          & "${{ inputs.script_path }}" `
+            -WorkspacePath "${{ github.workspace }}" `
+            -Configuration "${{ inputs.configuration }}" `
+            -BuildNumber "${{ inputs.build_number }}" `
+            -OctopusServerUrl "${{ inputs.octopus_server_url }}" `
+            -OctopusApiKey "$env:OCTOPUS_API_KEY" `
+            -NexusServerUrl "${{ inputs.nexus_server_url }}" `
+            -NexusUsername "$env:NEXUS_USERNAME" `
+            -NexusPassword "$env:NEXUS_PASSWORD"

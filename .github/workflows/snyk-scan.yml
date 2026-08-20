@@ -1,0 +1,37 @@
+name: Snyk Scan
+
+on:
+  workflow_call:
+    inputs:
+      solution_path:
+        description: Solution path or manifest file scanned by Snyk.
+        required: true
+        type: string
+      severity_threshold:
+        description: Minimum severity required to fail the scan.
+        required: false
+        type: string
+        default: high
+    secrets:
+      SNYK_TOKEN:
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  snyk-scan:
+    runs-on: windows-2019
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Snyk security scan
+        shell: pwsh
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        run: |
+          # Parameter passing: caller supplies the solution, threshold, and Snyk secret.
+          npm install --global snyk
+          snyk auth "$env:SNYK_TOKEN"
+          snyk test --file="${{ inputs.solution_path }}" --severity-threshold="${{ inputs.severity_threshold }}"

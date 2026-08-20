@@ -1,0 +1,76 @@
+name: SonarQube Analysis and Quality Gate
+
+on:
+  workflow_call:
+    inputs:
+      solution_path:
+        description: Solution path to analyze.
+        required: true
+        type: string
+      configuration:
+        description: Build configuration.
+        required: false
+        type: string
+        default: Release
+      sonar_project_key:
+        description: SonarQube project key.
+        required: true
+        type: string
+      sonar_host_url:
+        description: SonarQube server URL.
+        required: true
+        type: string
+      quality_gate_script_path:
+        description: Path in the calling repository to SonarQube-QG-Check.ps1.
+        required: false
+        type: string
+        default: SonarQube-QG-Check.ps1
+    secrets:
+      SONAR_TOKEN:
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  sonarqube-analysis-quality-gate:
+    runs-on: windows-2019
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: SonarQube scanner begin
+        shell: pwsh
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          # Parameter passing: sensitive token is provided as a reusable-workflow secret.
+          dotnet tool update --global dotnet-sonarscanner
+          dotnet sonarscanner begin `
+            /k:"${{ inputs.sonar_project_key }}" `
+            /d:sonar.host.url="${{ inputs.sonar_host_url }}" `
+            /d:sonar.login="$env:SONAR_TOKEN"
+
+      - name: Build inside SonarQube analysis scope
+        shell: pwsh
+        run: msbuild "${{ inputs.solution_path }}" /t:Rebuild /p:Configuration="${{ inputs.configuration }}" /m /restore:false
+
+      - name: SonarQube scanner end
+        shell: pwsh
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: dotnet sonarscanner end /d:sonar.login="$env:SONAR_TOKEN"
+
+      - name: Check SonarQube quality gate
+        shell: pwsh
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          # Parameter passing: the gate script gets URL, project key, and secret token.
+          & "${{ inputs.quality_gate_script_path }}" `
+            -SonarHostUrl "${{ inputs.sonar_host_url }}" `
+            -ProjectKey "${{ inputs.sonar_project_key }}" `
+            -Token "$env:SONAR_TOKEN"

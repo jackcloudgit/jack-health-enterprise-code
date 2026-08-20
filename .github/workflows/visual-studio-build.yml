@@ -1,0 +1,47 @@
+name: Visual Studio Build
+
+on:
+  workflow_call:
+    inputs:
+      solution_path:
+        description: Solution path to build.
+        required: true
+        type: string
+      configuration:
+        description: Build configuration.
+        required: false
+        type: string
+        default: Release
+      artifact_name:
+        description: Name of the compiled-output artifact for downstream reusable workflows.
+        required: false
+        type: string
+        default: dotnet-build-output
+
+permissions:
+  contents: read
+
+jobs:
+  visual-studio-build:
+    runs-on: windows-2019
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Clean and rebuild solution
+        shell: pwsh
+        run: |
+          # Parameter passing: caller supplies the solution and desired configuration.
+          msbuild "${{ inputs.solution_path }}" /t:Clean`;Rebuild /p:Configuration="${{ inputs.configuration }}" /m
+
+      - name: Upload compiled output
+        uses: actions/upload-artifact@v4
+        with:
+          # Parameter passing: caller chooses the artifact name consumed by test or publish workflows.
+          name: ${{ inputs.artifact_name }}
+          path: '**/bin/**'
+          if-no-files-found: error
+          retention-days: 7

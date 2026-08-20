@@ -1,0 +1,30 @@
+name: DevOps Metadata Load
+
+on:
+  workflow_call:
+    inputs:
+      script_path:
+        description: Path in the calling repository to metadataParse.ps1.
+        required: false
+        type: string
+        default: metadataParse.ps1
+
+permissions:
+  contents: read
+
+jobs:
+  devops-metadata-load:
+    runs-on: windows-2019
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Load DevOps metadata
+        shell: pwsh
+        run: |
+          # Parameter passing: GitHub run context is supplied to the calling repository's script.
+          & "${{ inputs.script_path }}" `
+            -RepositoryName "${{ github.repository }}" `
+            -BranchName "${{ github.ref_name }}" `
+            -CommitSha "${{ github.sha }}" `
+            -RunNumber "${{ github.run_number }}"

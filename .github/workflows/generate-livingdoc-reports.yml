@@ -1,0 +1,28 @@
+name: Generate LivingDoc BDD Reports
+
+on:
+  workflow_call:
+    inputs:
+      script_path:
+        description: Path in the calling repository to Generate-LivingDocReports.ps1.
+        required: false
+        type: string
+        default: Generate-LivingDocReports.ps1
+
+permissions:
+  contents: read
+
+jobs:
+  generate-livingdoc-reports:
+    runs-on: windows-2019
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate LivingDoc reports
+        shell: pwsh
+        run: |
+          # Parameter passing: reports are emitted in the called workflow workspace.
+          & "${{ inputs.script_path }}" `
+            -WorkspacePath "${{ github.workspace }}" `
+            -OutputPath "${{ runner.temp }}\livingdoc"
