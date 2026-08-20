@@ -1,0 +1,56 @@
+name: Unit Testing and Code Coverage
+
+on:
+  workflow_call:
+    inputs:
+      runner:
+        description: GitHub-hosted image or self-hosted runner label.
+        required: false
+        type: string
+        default: windows-2022
+      build_artifact_name:
+        description: Compiled-output artifact uploaded by the preceding build workflow.
+        required: false
+        type: string
+        default: dotnet-build-output
+      test_assemblies:
+        description: Newline-separated test assembly patterns for VSTest.
+        required: false
+        type: string
+        default: |
+          BuildOutput\*Tests\*.Tests.dll
+          BuildOutput\*Test\*.Test.dll
+          BuildOutput\*UnitTests\*.UnitTests.dll
+          !**\*TestAdapter.dll
+          !**\obj\**
+      platform:
+        description: VSTest platform.
+        required: false
+        type: string
+        default: x64
+
+permissions:
+  contents: read
+
+jobs:
+  unit-testing-code-coverage:
+    runs-on: ${{ inputs.runner }}
+    timeout-minutes: 60
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Download compiled output
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.build_artifact_name }}
+          path: ${{ github.workspace }}
+
+      - name: Run VSTest with code coverage
+        uses: microsoft/vstest-action@v1.0.0
+        with:
+          testAssembly: ${{ inputs.test_assemblies }}
+          searchFolder: ${{ github.workspace }}
+          runInParallel: true
+          codeCoverageEnabled: true
+          platform: ${{ inputs.platform }}

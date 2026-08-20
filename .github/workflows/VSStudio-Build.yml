@@ -1,0 +1,45 @@
+name: VSStudio Build
+
+on:
+  workflow_call:
+    inputs:
+      runner:
+        description: GitHub-hosted image or self-hosted runner label.
+        required: false
+        type: string
+        default: windows-2022
+      solution_file_path:
+        description: Path in the calling repository to the .NET solution file.
+        required: true
+        type: string
+      build_configuration:
+        description: Build configuration.
+        required: false
+        type: string
+        default: Release
+
+permissions:
+  contents: read
+
+jobs:
+  visual-studio-build:
+    runs-on: ${{ inputs.runner }}
+    timeout-minutes: 60
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+        with:
+          # Parameter passing: the VS 2019 range is retained for TeamCity migration compatibility.
+          vs-version: '[16.0, 17.0)'
+
+      - name: Clean and rebuild solution
+        shell: pwsh
+        run: |
+          # The backtick escapes ';' so PowerShell passes both targets to MSBuild as one argument.
+          msbuild "${{ inputs.solution_file_path }}" `
+            /t:Clean`;Rebuild `
+            /p:Configuration="${{ inputs.build_configuration }}" `
+            /m

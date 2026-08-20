@@ -13,6 +13,16 @@ on:
         required: false
         type: string
         default: Generate-LivingDocReports.ps1
+      working_directory:
+        description: Repository-relative working directory passed to the LivingDoc script.
+        required: false
+        type: string
+        default: .
+      project_type:
+        description: Project type passed to the LivingDoc script, for example DotnetFramework.
+        required: false
+        type: string
+        default: DotnetFramework
 
 permissions:
   contents: read
@@ -30,4 +40,6 @@ jobs:
           # Parameter passing: reports are emitted in the called workflow workspace.
           & "${{ inputs.script_path }}" `
             -WorkspacePath "${{ github.workspace }}" `
-            -OutputPath "${{ runner.temp }}\livingdoc"
+            -OutputPath "${{ runner.temp }}\livingdoc" `
+            -WorkingDirectory (Join-Path "${{ github.workspace }}" "${{ inputs.working_directory }}") `
+            -ProjectType "${{ inputs.project_type }}"
