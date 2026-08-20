@@ -3,6 +3,11 @@ name: Send Package to Octopus or Nexus
 on:
   workflow_call:
     inputs:
+      runner:
+        description: GitHub-hosted image or self-hosted runner label.
+        required: false
+        type: string
+        default: windows-2022
       script_path:
         description: Path in the calling repository to the packaging/upload PowerShell script.
         required: false
@@ -46,7 +51,7 @@ permissions:
 
 jobs:
   send-package-octopus-nexus:
-    runs-on: windows-2019
+    runs-on: ${{ inputs.runner }}
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4

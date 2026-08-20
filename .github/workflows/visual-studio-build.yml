@@ -3,6 +3,11 @@ name: Visual Studio Build
 on:
   workflow_call:
     inputs:
+      runner:
+        description: GitHub-hosted image or self-hosted runner label.
+        required: false
+        type: string
+        default: windows-2022
       solution_path:
         description: Solution path to build.
         required: true
@@ -23,7 +28,7 @@ permissions:
 
 jobs:
   visual-studio-build:
-    runs-on: windows-2019
+    runs-on: ${{ inputs.runner }}
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4

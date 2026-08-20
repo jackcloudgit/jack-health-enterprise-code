@@ -3,6 +3,11 @@ name: SonarQube Analysis and Quality Gate
 on:
   workflow_call:
     inputs:
+      runner:
+        description: GitHub-hosted image or self-hosted runner label.
+        required: false
+        type: string
+        default: windows-2022
       solution_path:
         description: Solution path to analyze.
         required: true
@@ -34,7 +39,7 @@ permissions:
 
 jobs:
   sonarqube-analysis-quality-gate:
-    runs-on: windows-2019
+    runs-on: ${{ inputs.runner }}
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4

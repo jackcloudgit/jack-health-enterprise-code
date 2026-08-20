@@ -3,6 +3,11 @@ name: Unit Testing and Code Coverage
 on:
   workflow_call:
     inputs:
+      runner:
+        description: GitHub-hosted image or self-hosted runner label.
+        required: false
+        type: string
+        default: windows-2022
       platform:
         description: VSTest platform.
         required: false
@@ -19,7 +24,7 @@ permissions:
 
 jobs:
   unit-testing-code-coverage:
-    runs-on: windows-2019
+    runs-on: ${{ inputs.runner }}
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
